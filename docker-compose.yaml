@@ -36,7 +36,8 @@ services:
       - postgres
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - _AIRFLOW_DB_UPGRADE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=airflow
@@ -46,8 +47,15 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
-    entrypoint: /bin/bash
-    command: -c "airflow db init && airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com --password airflow"
+      - ./requirements.txt:/requirements.txt
+    command: version
+    entrypoint: >
+      bash -c "
+      pip install -r /requirements.txt &&
+      airflow db init &&
+      airflow db upgrade &&
+      airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com --password airflow
+      "
 
   # Airflow Webserver
   airflow-webserver:
@@ -57,15 +65,21 @@ services:
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
+      - ./requirements.txt:/requirements.txt
     ports:
       - "8080:8080"
-    command: webserver
+    entrypoint: >
+      bash -c "
+      pip install -r /requirements.txt &&
+      airflow webserver
+      "
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 10s
@@ -80,13 +94,19 @@ services:
       - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
-    command: scheduler
+      - ./requirements.txt:/requirements.txt
+    entrypoint: >
+      bash -c "
+      pip install -r /requirements.txt &&
+      airflow scheduler
+      "
 
 volumes:
   postgres-db-volume:
