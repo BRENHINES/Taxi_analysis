@@ -29,13 +29,14 @@ dag = DAG(
 ingest_task = PythonOperator(
     task_id='ingest_taxi_data',
     python_callable=taxi_ingestion,
-    op_kwargs={'year': 2022, 'month': 1},
+    op_kwargs={'years': [2022], 'months': [1]},
     dag=dag,
 )
 
 transform_task = PythonOperator(
     task_id='transform_taxi_data',
     python_callable=taxi_transformation,
+    op_kwargs={'year': 2022, 'month': 1},  # Pass the same params as ingestion
     dag=dag,
 )
 

@@ -31,7 +31,9 @@ services:
 
   # Initialisation de la base de données Airflow
   airflow-init:
-    image: apache/airflow:2.3.0
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - postgres
     environment:
@@ -42,16 +44,23 @@ services:
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=airflow
       - _AIRFLOW_WWW_USER_PASSWORD=airflow
+      # Variables d'environnement pour Java et Spark
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      - SPARK_HOME=/opt/spark
+      - HADOOP_HOME=/opt/hadoop
+      - PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.5-src.zip:$PYTHONPATH
+      - PYSPARK_PYTHON=/usr/local/bin/python
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
-      - ./requirements.txt:/requirements.txt
+      # Volumes additionnels pour Spark et Hadoop
+      - ./spark-config:/opt/spark/conf
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
     command: version
     entrypoint: >
       bash -c "
-      pip install -r /requirements.txt &&
       airflow db init &&
       airflow db upgrade &&
       airflow users create --username airflow --firstname Airflow --lastname Admin --role Admin --email admin@example.com --password airflow
@@ -59,7 +68,9 @@ services:
 
   # Airflow Webserver
   airflow-webserver:
-    image: apache/airflow:2.3.0
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - postgres
       - airflow-init
@@ -67,19 +78,23 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      # Variables d'environnement pour Java et Spark
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      - SPARK_HOME=/opt/spark
+      - HADOOP_HOME=/opt/hadoop
+      - PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.5-src.zip:$PYTHONPATH
+      - PYSPARK_PYTHON=/usr/local/bin/python
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
-      - ./requirements.txt:/requirements.txt
+      # Volumes additionnels pour Spark et Hadoop
+      - ./spark-config:/opt/spark/conf
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
     ports:
       - "8080:8080"
-    entrypoint: >
-      bash -c "
-      pip install -r /requirements.txt &&
-      airflow webserver
-      "
+    command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 10s
@@ -88,7 +103,9 @@ services:
 
   # Airflow Scheduler
   airflow-scheduler:
-    image: apache/airflow:2.3.0
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - postgres
       - airflow-init
@@ -96,17 +113,21 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      # Variables d'environnement pour Java et Spark
+      - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      - SPARK_HOME=/opt/spark
+      - HADOOP_HOME=/opt/hadoop
+      - PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.5-src.zip:$PYTHONPATH
+      - PYSPARK_PYTHON=/usr/local/bin/python
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./dbt_project:/opt/airflow/dbt_project
-      - ./requirements.txt:/requirements.txt
-    entrypoint: >
-      bash -c "
-      pip install -r /requirements.txt &&
-      airflow scheduler
-      "
+      # Volumes additionnels pour Spark et Hadoop
+      - ./spark-config:/opt/spark/conf
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+    command: scheduler
 
 volumes:
   postgres-db-volume:

@@ -1,5 +1,13 @@
 minio
 pandas
-pyspark
+py4j
 psycopg2-binary
 requests
+boto3
+s3fs
+apache-airflow-providers-apache-spark
+apache-airflow-providers-postgres
+apache-airflow-providers-amazon
+pyspark==3.3.0
+findspark
+delta-spark
